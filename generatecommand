@@ -1,0 +1,19 @@
+#!/bin/bash
+file="$1"
+parens=3
+static_begin="summon MinecartCommandBlock ~ ~2 ~ {"
+static_end=",Riding:{id:FallingSand,Block:activator_rail,Time:1b,Riding:{id:FallingSand,Block:redstone_block,Time:1b"
+echo -n "$static_begin"
+while read line || [[ -n "$line" ]]; do
+	escapedcommand="$(printf %q "$line" | sed 's/\\ / /g;s/\\{/{/g;s/\\,/,/g;s/\\}/}/g')"
+	echo -n "Command:\"$escapedcommand\",Riding:{id:MinecartCommandBlock,"
+	((parens++))
+done <"$file"
+echo -n "Command:\"say This is a test!\",Riding:{id:MinecartCommandBlock,Command:\"kill @e[type=MinecartCommandBlock,r=1]\""
+((parens++))
+echo -n "$static_end"
+while [ "$parens" -gt 0 ]; do
+	echo -n "}"
+	((parens--))
+done
+echo

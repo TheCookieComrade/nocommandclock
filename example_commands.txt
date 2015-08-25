@@ -1,0 +1,5 @@
+tellraw @a {"color":"red","text":"Hello"}
+say Hello
+say Welcome
+say Hi
+say How's it going?

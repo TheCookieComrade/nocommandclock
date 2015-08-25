@@ -1,0 +1,59 @@
+#!/bin/bash
+inputfile="$1"
+encaseblock="$2"
+file="$(mktemp -p /tmp NOCOMMANDCLOCK_XXXXXX)"
+./getsize "$(wc -l < "$inputfile")" x "$file" >/dev/null 2>/dev/null
+linec=5
+
+x= #command blocks horizontally
+y= #command blocks vertically
+ox= #box horizontally
+oy= #box vertically
+e= #empty spaces
+
+cx= #nothing here
+cy= #nothing here
+
+while read line || [[ -n "$line" ]] && [ "$linec" -gt 0 ]; do
+	case "$linec" in
+		5) x="$line" ;;
+		4) y="$line" ;;
+		3) ox="$line" ;;
+		2) oy="$line" ;;
+		1) e="$line" ;;
+	esac
+	((linec--))
+done <"$file"
+
+offset_x="2"
+offset_z="0"
+offset_y="1"
+filearr=()
+
+while read line || [[ -n "$line" ]]; do
+	filearr+=("$line")
+done <"$inputfile"
+
+i=0
+arr_index=0
+max_index="$(echo "$(wc -l < "$inputfile") - $e" | bc)"
+while [[ "$i" -lt "$x" ]]; do
+	j=0
+	while [[ "$j" -lt "$y" ]]; do
+		real_x="$(echo "$i+$offset_x" | bc)"
+		real_y="$(echo "$j+$offset_y" | bc)"
+		real_z="$offset_z"
+		escapedcommand="$(printf %q "${filearr[$arr_index]}" | sed 's/\\ / /g;s/\\{/{/g;s/\\,/,/g;s/\\}/}/g')"
+		escapedcommand="$(printf %q "$escapedcommand" | sed 's/\\ / /g;s/\\{/{/g;s/\\,/,/g;s/\\}/}/g')"
+		if ! [ "$arr_index" -gt "$max_index" ]; then
+			echo "setblock ~$real_x ~$real_y ~$real_z repeating_command_block 0 replace {Command:\"$escapedcommand\",auto:1b}"
+		fi
+		((j++))
+		((arr_index++))
+	done
+	((i++))
+done
+
+echo "fill ~$(echo "$offset_x-1" | bc) ~$(echo "$offset_y-1" | bc) ~$(echo "$offset_z-1" | bc) ~$(echo "$x+$offset_x" | bc) ~$(echo "$y+$offset_y" | bc) ~$(echo "1+$offset_z" | bc) $encaseblock replace air"
+
+rm "$file"
